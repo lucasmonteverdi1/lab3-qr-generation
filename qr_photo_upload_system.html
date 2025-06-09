@@ -363,7 +363,6 @@
         function generateQRCode() {
             sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
             
-            // Handle file:// protocol by using a more compatible URL format
             let baseUrl = window.location.href;
             if (baseUrl.includes('?')) {
                 baseUrl = baseUrl.split('?')[0];
@@ -387,8 +386,7 @@
         }
 
         // function startPollingForPhoto() {
-        //     // More aggressive polling with multiple strategies
-        //     const pollInterval = setInterval(checkForUploadedPhoto, 1000); // Check every second
+        //     const pollInterval = setInterval(checkForUploadedPhoto, 2000);
         //
         //     // Also check when window regains focus (user returns to form)
         //     window.addEventListener('focus', checkForUploadedPhoto);
@@ -404,6 +402,7 @@
         //     window.pollInterval = pollInterval;
         // }
 
+        // TODO this should use and endpoint.
         // function checkForUploadedPhoto() {
         //     // Check if photo was uploaded for this session
         //     const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
@@ -434,6 +433,7 @@
         //     }
         // }
 
+        // TODO this should use an endpoint.
         // function displayUploadedPhoto(photoData) {
         //     const uploadSection = document.getElementById('uploadSection');
         //     const status = document.getElementById('uploadStatus');
@@ -466,7 +466,6 @@
         //     console.log('Photo displayed successfully');
         // }
 
-        // Camera functionality
         async function initializeCamera() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
@@ -557,12 +556,14 @@
                     console.log('Custom event not supported');
                 }
                 
-                alert('Photo uploaded successfully! Return to the form and click "Check Storage Now" if it doesn\'t appear automatically.');
+                alert('Foto subida correctamente!');
                 
                 // Stop camera stream
                 if (stream) {
                     stream.getTracks().forEach(track => track.stop());
                 }
+
+              localStorage.removeItem('uploaded_photo_' + window.currentSessionId);
             } else {
                 console.error('Upload failed - missing photo or session ID');
                 console.log('Has photo:', !!capturedPhoto);
@@ -579,7 +580,7 @@
             console.log('Form Data:', Object.fromEntries(formData));
             console.log('Uploaded Photo:', uploadedPhoto ? 'Photo included' : 'No photo');
             
-            alert('Form submitted successfully!');
+            alert('Formulario enviado correctamente!');
             
             localStorage.removeItem('uploaded_photo_' + sessionId);
         });
