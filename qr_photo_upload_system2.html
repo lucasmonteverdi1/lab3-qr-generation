@@ -404,8 +404,19 @@
                     '<p style="color: red;">Error generating QR code. Check console for details.</p>';
             }
             
-            // Show status
-            document.getElementById('uploadStatus').style.display = 'block';
+            // Show debug info in the form
+            const debugInfo = document.createElement('div');
+            debugInfo.id = 'debugInfo';
+            debugInfo.style.cssText = 'background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; font-size: 12px;';
+            debugInfo.innerHTML = `
+                <strong>Debug Info:</strong><br>
+                Session ID: ${sessionId}<br>
+                Storage Key: uploaded_photo_${sessionId}<br>
+                Polling every 2 seconds...<br>
+                <button onclick="checkStorageManually()" style="margin-top: 5px;">Check Storage Now</button>
+                <button onclick="showAllStorage()" style="margin-top: 5px;">Show All Storage</button>
+            `;
+            document.getElementById('uploadSection').appendChild(debugInfo);
         }
 
         function startPollingForPhoto() {
@@ -417,7 +428,11 @@
         function checkForUploadedPhoto() {
             // Check if photo was uploaded for this session
             const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
+            console.log('Checking for photo with session:', sessionId);
+            console.log('Found photo:', uploadedPhoto ? 'YES' : 'NO');
+            
             if (uploadedPhoto && !document.getElementById('photoPreview').src) {
+                console.log('Displaying uploaded photo');
                 displayUploadedPhoto(uploadedPhoto);
             }
         }
@@ -498,8 +513,19 @@
 
         document.getElementById('uploadBtn').addEventListener('click', function() {
             if (capturedPhoto && window.currentSessionId) {
+                console.log('Uploading photo for session:', window.currentSessionId);
+                
                 // Store the photo (in real implementation, send to server)
                 localStorage.setItem('uploaded_photo_' + window.currentSessionId, capturedPhoto);
+                
+                // Verify it was stored
+                const stored = localStorage.getItem('uploaded_photo_' + window.currentSessionId);
+                console.log('Photo stored successfully:', stored ? 'YES' : 'NO');
+                console.log('Storage key used:', 'uploaded_photo_' + window.currentSessionId);
+                
+                // Also store a simple flag for debugging
+                localStorage.setItem('last_upload_session', window.currentSessionId);
+                localStorage.setItem('last_upload_time', new Date().toISOString());
                 
                 alert('Photo uploaded successfully! You can now close this window and return to the form.');
                 
@@ -507,6 +533,10 @@
                 if (stream) {
                     stream.getTracks().forEach(track => track.stop());
                 }
+            } else {
+                console.error('Upload failed - missing photo or session ID');
+                console.log('Has photo:', !!capturedPhoto);
+                console.log('Session ID:', window.currentSessionId);
             }
         });
 
@@ -526,6 +556,31 @@
             // Clean up
             localStorage.removeItem('uploaded_photo_' + sessionId);
         });
+
+        // Debug functions
+        window.checkStorageManually = function() {
+            console.log('=== Manual Storage Check ===');
+            console.log('Current session ID:', sessionId);
+            console.log('Looking for key:', 'uploaded_photo_' + sessionId);
+            
+            const photo = localStorage.getItem('uploaded_photo_' + sessionId);
+            console.log('Found photo:', photo ? 'YES (length: ' + photo.length + ')' : 'NO');
+            
+            if (photo) {
+                displayUploadedPhoto(photo);
+            } else {
+                alert('No photo found in storage for session: ' + sessionId);
+            }
+        };
+
+        window.showAllStorage = function() {
+            console.log('=== All LocalStorage Contents ===');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                console.log(key + ':', value.substring(0, 50) + (value.length > 50 ? '...' : ''));
+            }
+        };
 
         // Clean up on page unload
         window.addEventListener('beforeunload', function() {
