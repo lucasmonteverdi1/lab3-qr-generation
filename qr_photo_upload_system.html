@@ -269,59 +269,40 @@
     <!-- Main Form Page -->
     <div id="mainPage" class="container">
         <div class="header">
-            <h1>📋 Medical Study Upload</h1>
-            <p>Upload your medical study documentation</p>
+            <h1>📋 Subida de Estudios Medicos</h1>
         </div>
         
         <div class="form-section">
             <form id="medicalForm">
                 <div class="form-group">
-                    <label for="patientName">Patient Name</label>
+                    <label for="patientName">Nombre del Paciente</label>
                     <input type="text" id="patientName" name="patientName" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="studyType">Study Type</label>
-                    <select id="studyType" name="studyType" required>
-                        <option value="">Select study type...</option>
-                        <option value="xray">X-Ray</option>
-                        <option value="mri">MRI</option>
-                        <option value="ct">CT Scan</option>
-                        <option value="ultrasound">Ultrasound</option>
-                        <option value="blood-work">Blood Work</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="notes">Additional Notes</label>
-                    <textarea id="notes" name="notes" rows="3" placeholder="Any additional information about the study..."></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>📱 Medical Study Photo</label>
+                    <label>📱 Foto del estudio médico</label>
                     <div class="upload-section" id="uploadSection">
-                        <h3>📱 Scan QR Code with Your Phone</h3>
+                        <h3>📱 Escanea el código QR con tu teléfono</h3>
                         <div class="qr-container" id="qrContainer">
                             <!-- QR Code will be generated here -->
                         </div>
                         <div class="upload-instructions">
-                            <strong>Instructions:</strong><br>
-                            1. Open your phone's camera app<br>
-                            2. Point it at the QR code above<br>
-                            3. Tap the notification to open the camera interface<br>
-                            4. Take a clear photo of your medical study<br>
-                            5. Upload the photo
+                            <strong>Instrucciones:</strong><br>
+                            1. Abre la app de cámara de tu teléfono<br>
+                            2. Apunta al código QR de arriba<br>
+                            3. Toca la notificación para abrir la cámara<br>
+                            4. Toma una foto clara de tu estudio médico<br>
+                            5. Sube la foto
                         </div>
                         <div id="uploadStatus" class="status waiting" style="display: none;">
-                            Waiting for photo upload...
+                            Esperando foto...
                         </div>
                         <img id="photoPreview" class="photo-preview" style="display: none;">
                     </div>
                 </div>
                 
                 <button type="submit" class="submit-btn" id="submitBtn" disabled>
-                    Submit Medical Study Form
+                    Enviar Formulario
                 </button>
             </form>
         </div>
@@ -330,8 +311,8 @@
     <!-- Camera Page -->
     <div id="cameraPage" class="camera-page">
         <div class="camera-header">
-            <h2>📸 Take Photo of Medical Study</h2>
-            <p>Position your document clearly in the frame</p>
+            <h2>📸 Tomar Foto del Estudio Médico</h2>
+            <p>Coloca el documento dentro del cuadro</p>
         </div>
         
         <div class="camera-container">
@@ -339,9 +320,9 @@
             <canvas id="canvas"></canvas>
             
             <div class="camera-controls">
-                <button id="captureBtn" class="camera-btn capture-btn">📸 Capture Photo</button>
-                <button id="retakeBtn" class="camera-btn retake-btn" style="display: none;">🔄 Retake</button>
-                <button id="uploadBtn" class="camera-btn upload-btn" style="display: none;">✅ Upload Photo</button>
+                <button id="captureBtn" class="camera-btn capture-btn">📸 Tomar Foto</button>
+                <button id="retakeBtn" class="camera-btn retake-btn" style="display: none;">🔄 Repetir</button>
+                <button id="uploadBtn" class="camera-btn upload-btn" style="display: none;">✅ Subir Foto</button>
             </div>
         </div>
     </div>
@@ -369,7 +350,7 @@
             document.getElementById('mainPage').style.display = 'block';
             document.getElementById('cameraPage').style.display = 'none';
             generateQRCode();
-            startPollingForPhoto();
+            // startPollingForPhoto();
         }
 
         function showCameraPage(sessionId) {
@@ -401,103 +382,89 @@
             } catch (error) {
                 console.error('QR generation failed:', error);
                 document.getElementById('qrContainer').innerHTML = 
-                    '<p style="color: red;">Error generating QR code. Check console for details.</p>';
-            }
-            
-            // Show debug info in the form
-            const debugInfo = document.createElement('div');
-            debugInfo.id = 'debugInfo';
-            debugInfo.style.cssText = 'background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; font-size: 12px;';
-            debugInfo.innerHTML = `
-                <strong>Debug Info:</strong><br>
-                Session ID: ${sessionId}<br>
-                Storage Key: uploaded_photo_${sessionId}<br>
-                Polling every 2 seconds...<br>
-                <button onclick="checkStorageManually()" style="margin-top: 5px;">Check Storage Now</button>
-                <button onclick="showAllStorage()" style="margin-top: 5px;">Show All Storage</button>
-            `;
-            document.getElementById('uploadSection').appendChild(debugInfo);
-        }
-
-        function startPollingForPhoto() {
-            // More aggressive polling with multiple strategies
-            const pollInterval = setInterval(checkForUploadedPhoto, 1000); // Check every second
-            
-            // Also check when window regains focus (user returns to form)
-            window.addEventListener('focus', checkForUploadedPhoto);
-            
-            // Check when localStorage changes (though this may not work cross-device)
-            window.addEventListener('storage', function(e) {
-                if (e.key && e.key.startsWith('uploaded_photo_')) {
-                    checkForUploadedPhoto();
-                }
-            });
-            
-            // Store the interval ID so we can clear it later
-            window.pollInterval = pollInterval;
-        }
-
-        function checkForUploadedPhoto() {
-            // Check if photo was uploaded for this session
-            const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
-            const timestamp = new Date().toLocaleTimeString();
-            
-            console.log(`[${timestamp}] Checking for photo with session:`, sessionId);
-            console.log(`[${timestamp}] Found photo:`, uploadedPhoto ? 'YES (length: ' + uploadedPhoto.length + ')' : 'NO');
-            
-            // Update debug info in real-time
-            const debugInfo = document.getElementById('debugInfo');
-            if (debugInfo) {
-                const statusLine = debugInfo.querySelector('#pollStatus') || document.createElement('div');
-                statusLine.id = 'pollStatus';
-                statusLine.innerHTML = `Last check: ${timestamp} - Photo: ${uploadedPhoto ? '✅ FOUND' : '❌ NOT FOUND'}`;
-                if (!debugInfo.querySelector('#pollStatus')) {
-                    debugInfo.appendChild(statusLine);
-                }
-            }
-            
-            if (uploadedPhoto && !document.getElementById('photoPreview').src) {
-                console.log('Displaying uploaded photo');
-                displayUploadedPhoto(uploadedPhoto);
-                
-                // Stop polling once we find the photo
-                if (window.pollInterval) {
-                    clearInterval(window.pollInterval);
-                }
+                    '<p style="color: red;">Error generando código QR. </p>';
             }
         }
 
-        function displayUploadedPhoto(photoData) {
-            const uploadSection = document.getElementById('uploadSection');
-            const status = document.getElementById('uploadStatus');
-            const preview = document.getElementById('photoPreview');
-            const submitBtn = document.getElementById('submitBtn');
-            
-            // Handle both old format (direct base64) and new format (JSON)
-            let imageData;
-            let timestamp = '';
-            
-            try {
-                const parsed = JSON.parse(photoData);
-                imageData = parsed.image;
-                timestamp = new Date(parsed.timestamp).toLocaleString();
-            } catch (e) {
-                // Old format - direct base64 string
-                imageData = photoData;
-            }
-            
-            uploadSection.classList.add('has-photo');
-            status.className = 'status success';
-            status.style.display = 'block';
-            status.textContent = `✅ Photo uploaded successfully!${timestamp ? ' at ' + timestamp : ''}`;
-            
-            preview.src = imageData;
-            preview.style.display = 'block';
-            
-            submitBtn.disabled = false;
-            
-            console.log('Photo displayed successfully');
-        }
+        // function startPollingForPhoto() {
+        //     // More aggressive polling with multiple strategies
+        //     const pollInterval = setInterval(checkForUploadedPhoto, 1000); // Check every second
+        //
+        //     // Also check when window regains focus (user returns to form)
+        //     window.addEventListener('focus', checkForUploadedPhoto);
+        //
+        //     // Check when localStorage changes (though this may not work cross-device)
+        //     window.addEventListener('storage', function(e) {
+        //         if (e.key && e.key.startsWith('uploaded_photo_')) {
+        //             checkForUploadedPhoto();
+        //         }
+        //     });
+        //
+        //     // Store the interval ID so we can clear it later
+        //     window.pollInterval = pollInterval;
+        // }
+
+        // function checkForUploadedPhoto() {
+        //     // Check if photo was uploaded for this session
+        //     const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
+        //     const timestamp = new Date().toLocaleTimeString();
+        //
+        //     console.log(`[${timestamp}] Checking for photo with session:`, sessionId);
+        //     console.log(`[${timestamp}] Found photo:`, uploadedPhoto ? 'YES (length: ' + uploadedPhoto.length + ')' : 'NO');
+        //
+        //     // Update debug info in real-time
+        //     const debugInfo = document.getElementById('debugInfo');
+        //     if (debugInfo) {
+        //         const statusLine = debugInfo.querySelector('#pollStatus') || document.createElement('div');
+        //         statusLine.id = 'pollStatus';
+        //         statusLine.innerHTML = `Last check: ${timestamp} - Photo: ${uploadedPhoto ? '✅ FOUND' : '❌ NOT FOUND'}`;
+        //         if (!debugInfo.querySelector('#pollStatus')) {
+        //             debugInfo.appendChild(statusLine);
+        //         }
+        //     }
+        //
+        //     if (uploadedPhoto && !document.getElementById('photoPreview').src) {
+        //         console.log('Displaying uploaded photo');
+        //         displayUploadedPhoto(uploadedPhoto);
+        //
+        //         // Stop polling once we find the photo
+        //         if (window.pollInterval) {
+        //             clearInterval(window.pollInterval);
+        //         }
+        //     }
+        // }
+
+        // function displayUploadedPhoto(photoData) {
+        //     const uploadSection = document.getElementById('uploadSection');
+        //     const status = document.getElementById('uploadStatus');
+        //     const preview = document.getElementById('photoPreview');
+        //     const submitBtn = document.getElementById('submitBtn');
+        //
+        //     // Handle both old format (direct base64) and new format (JSON)
+        //     let imageData;
+        //     let timestamp = '';
+        //
+        //     try {
+        //         const parsed = JSON.parse(photoData);
+        //         imageData = parsed.image;
+        //         timestamp = new Date(parsed.timestamp).toLocaleString();
+        //     } catch (e) {
+        //         // Old format - direct base64 string
+        //         imageData = photoData;
+        //     }
+        //
+        //     uploadSection.classList.add('has-photo');
+        //     status.className = 'status success';
+        //     status.style.display = 'block';
+        //     status.textContent = `✅ Photo uploaded successfully!${timestamp ? ' at ' + timestamp : ''}`;
+        //
+        //     preview.src = imageData;
+        //     preview.style.display = 'block';
+        //
+        //     submitBtn.disabled = false;
+        //
+        //     console.log('Photo displayed successfully');
+        // }
 
         // Camera functionality
         async function initializeCamera() {
@@ -603,47 +570,19 @@
             }
         });
 
-        // Form submission
         document.getElementById('medicalForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
             const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
             
-            // In a real implementation, you would send this to your server
             console.log('Form Data:', Object.fromEntries(formData));
             console.log('Uploaded Photo:', uploadedPhoto ? 'Photo included' : 'No photo');
             
-            alert('Form submitted successfully! In a real implementation, this would be sent to your server.');
+            alert('Form submitted successfully!');
             
-            // Clean up
             localStorage.removeItem('uploaded_photo_' + sessionId);
         });
-
-        // Debug functions
-        window.checkStorageManually = function() {
-            console.log('=== Manual Storage Check ===');
-            console.log('Current session ID:', sessionId);
-            console.log('Looking for key:', 'uploaded_photo_' + sessionId);
-            
-            const photo = localStorage.getItem('uploaded_photo_' + sessionId);
-            console.log('Found photo:', photo ? 'YES (length: ' + photo.length + ')' : 'NO');
-            
-            if (photo) {
-                displayUploadedPhoto(photo);
-            } else {
-                alert('No photo found in storage for session: ' + sessionId);
-            }
-        };
-
-        window.showAllStorage = function() {
-            console.log('=== All LocalStorage Contents ===');
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                console.log(key + ':', value.substring(0, 50) + (value.length > 50 ? '...' : ''));
-            }
-        };
 
         // Clean up on page unload
         window.addEventListener('beforeunload', function() {
