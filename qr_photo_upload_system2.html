@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Study Upload Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .form-section {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section.has-photo {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .qr-container {
+            display: inline-block;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+
+        .upload-instructions {
+            margin-top: 20px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .upload-instructions strong {
+            color: #333;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status.waiting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .photo-preview {
+            margin-top: 20px;
+            max-width: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Camera Page Styles */
+        .camera-page {
+            display: none;
+            background: #000;
+            color: white;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .camera-header {
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .camera-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .camera-controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .camera-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .capture-btn {
+            background: #ff4757;
+            color: white;
+        }
+
+        .capture-btn:hover {
+            background: #ff3742;
+            transform: scale(1.05);
+        }
+
+        .upload-btn {
+            background: #2ed573;
+            color: white;
+        }
+
+        .upload-btn:hover {
+            background: #1dd65f;
+            transform: scale(1.05);
+        }
+
+        .retake-btn {
+            background: #ffa502;
+            color: white;
+        }
+
+        .retake-btn:hover {
+            background: #ff9500;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Form Page -->
+    <div id="mainPage" class="container">
+        <div class="header">
+            <h1>📋 Medical Study Upload</h1>
+            <p>Upload your medical study documentation</p>
+        </div>
+        
+        <div class="form-section">
+            <form id="medicalForm">
+                <div class="form-group">
+                    <label for="patientName">Patient Name</label>
+                    <input type="text" id="patientName" name="patientName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="studyType">Study Type</label>
+                    <select id="studyType" name="studyType" required>
+                        <option value="">Select study type...</option>
+                        <option value="xray">X-Ray</option>
+                        <option value="mri">MRI</option>
+                        <option value="ct">CT Scan</option>
+                        <option value="ultrasound">Ultrasound</option>
+                        <option value="blood-work">Blood Work</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Additional Notes</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="Any additional information about the study..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>📱 Medical Study Photo</label>
+                    <div class="upload-section" id="uploadSection">
+                        <h3>📱 Scan QR Code with Your Phone</h3>
+                        <div class="qr-container" id="qrContainer">
+                            <!-- QR Code will be generated here -->
+                        </div>
+                        <div class="upload-instructions">
+                            <strong>Instructions:</strong><br>
+                            1. Open your phone's camera app<br>
+                            2. Point it at the QR code above<br>
+                            3. Tap the notification to open the camera interface<br>
+                            4. Take a clear photo of your medical study<br>
+                            5. Upload the photo
+                        </div>
+                        <div id="uploadStatus" class="status waiting" style="display: none;">
+                            Waiting for photo upload...
+                        </div>
+                        <img id="photoPreview" class="photo-preview" style="display: none;">
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                    Submit Medical Study Form
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Camera Page -->
+    <div id="cameraPage" class="camera-page">
+        <div class="camera-header">
+            <h2>📸 Take Photo of Medical Study</h2>
+            <p>Position your document clearly in the frame</p>
+        </div>
+        
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+            
+            <div class="camera-controls">
+                <button id="captureBtn" class="camera-btn capture-btn">📸 Capture Photo</button>
+                <button id="retakeBtn" class="camera-btn retake-btn" style="display: none;">🔄 Retake</button>
+                <button id="uploadBtn" class="camera-btn upload-btn" style="display: none;">✅ Upload Photo</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let sessionId = '';
+        let stream = null;
+        let capturedPhoto = null;
+
+        // Initialize the form
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if this is the camera page
+            const urlParams = new URLSearchParams(window.location.search);
+            const cameraSessionId = urlParams.get('session');
+            
+            if (cameraSessionId) {
+                showCameraPage(cameraSessionId);
+            } else {
+                showMainPage();
+            }
+        });
+
+        function showMainPage() {
+            document.getElementById('mainPage').style.display = 'block';
+            document.getElementById('cameraPage').style.display = 'none';
+            generateQRCode();
+            startPollingForPhoto();
+        }
+
+        function showCameraPage(sessionId) {
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('cameraPage').style.display = 'flex';
+            initializeCamera();
+            window.currentSessionId = sessionId;
+        }
+
+        function generateQRCode() {
+            sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            
+            // Handle file:// protocol by using a more compatible URL format
+            let baseUrl = window.location.href;
+            if (baseUrl.includes('?')) {
+                baseUrl = baseUrl.split('?')[0];
+            }
+            const cameraUrl = baseUrl + '?session=' + sessionId;
+            
+            console.log('Generated QR URL:', cameraUrl); // Debug info
+            
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(cameraUrl);
+                qr.make();
+                
+                document.getElementById('qrContainer').innerHTML = qr.createImgTag(4, 8);
+                console.log('QR code generated successfully');
+            } catch (error) {
+                console.error('QR generation failed:', error);
+                document.getElementById('qrContainer').innerHTML = 
+                    '<p style="color: red;">Error generating QR code. Check console for details.</p>';
+            }
+            
+            // Show status
+            document.getElementById('uploadStatus').style.display = 'block';
+        }
+
+        function startPollingForPhoto() {
+            // Simulate checking for uploaded photos
+            // In a real implementation, this would poll your server
+            setInterval(checkForUploadedPhoto, 2000);
+        }
+
+        function checkForUploadedPhoto() {
+            // Check if photo was uploaded for this session
+            const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
+            if (uploadedPhoto && !document.getElementById('photoPreview').src) {
+                displayUploadedPhoto(uploadedPhoto);
+            }
+        }
+
+        function displayUploadedPhoto(photoDataUrl) {
+            const uploadSection = document.getElementById('uploadSection');
+            const status = document.getElementById('uploadStatus');
+            const preview = document.getElementById('photoPreview');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            uploadSection.classList.add('has-photo');
+            status.className = 'status success';
+            status.textContent = '✅ Photo uploaded successfully!';
+            
+            preview.src = photoDataUrl;
+            preview.style.display = 'block';
+            
+            submitBtn.disabled = false;
+        }
+
+        // Camera functionality
+        async function initializeCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment', // Use back camera
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('Unable to access camera. Please ensure you have granted camera permissions.');
+            }
+        }
+
+        document.getElementById('captureBtn').addEventListener('click', function() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0);
+            
+            // Get image data
+            capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Show preview
+            video.style.display = 'none';
+            canvas.style.display = 'block';
+            
+            // Show/hide buttons
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('retakeBtn').style.display = 'inline-block';
+            document.getElementById('uploadBtn').style.display = 'inline-block';
+        });
+
+        document.getElementById('retakeBtn').addEventListener('click', function() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            
+            video.style.display = 'block';
+            canvas.style.display = 'none';
+            
+            document.getElementById('captureBtn').style.display = 'inline-block';
+            document.getElementById('retakeBtn').style.display = 'none';
+            document.getElementById('uploadBtn').style.display = 'none';
+            
+            capturedPhoto = null;
+        });
+
+        document.getElementById('uploadBtn').addEventListener('click', function() {
+            if (capturedPhoto && window.currentSessionId) {
+                // Store the photo (in real implementation, send to server)
+                localStorage.setItem('uploaded_photo_' + window.currentSessionId, capturedPhoto);
+                
+                alert('Photo uploaded successfully! You can now close this window and return to the form.');
+                
+                // Stop camera stream
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            }
+        });
+
+        // Form submission
+        document.getElementById('medicalForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
+            
+            // In a real implementation, you would send this to your server
+            console.log('Form Data:', Object.fromEntries(formData));
+            console.log('Uploaded Photo:', uploadedPhoto ? 'Photo included' : 'No photo');
+            
+            alert('Form submitted successfully! In a real implementation, this would be sent to your server.');
+            
+            // Clean up
+            localStorage.removeItem('uploaded_photo_' + sessionId);
+        });
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
