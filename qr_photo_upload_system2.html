@@ -420,37 +420,83 @@
         }
 
         function startPollingForPhoto() {
-            // Simulate checking for uploaded photos
-            // In a real implementation, this would poll your server
-            setInterval(checkForUploadedPhoto, 2000);
+            // More aggressive polling with multiple strategies
+            const pollInterval = setInterval(checkForUploadedPhoto, 1000); // Check every second
+            
+            // Also check when window regains focus (user returns to form)
+            window.addEventListener('focus', checkForUploadedPhoto);
+            
+            // Check when localStorage changes (though this may not work cross-device)
+            window.addEventListener('storage', function(e) {
+                if (e.key && e.key.startsWith('uploaded_photo_')) {
+                    checkForUploadedPhoto();
+                }
+            });
+            
+            // Store the interval ID so we can clear it later
+            window.pollInterval = pollInterval;
         }
 
         function checkForUploadedPhoto() {
             // Check if photo was uploaded for this session
             const uploadedPhoto = localStorage.getItem('uploaded_photo_' + sessionId);
-            console.log('Checking for photo with session:', sessionId);
-            console.log('Found photo:', uploadedPhoto ? 'YES' : 'NO');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            console.log(`[${timestamp}] Checking for photo with session:`, sessionId);
+            console.log(`[${timestamp}] Found photo:`, uploadedPhoto ? 'YES (length: ' + uploadedPhoto.length + ')' : 'NO');
+            
+            // Update debug info in real-time
+            const debugInfo = document.getElementById('debugInfo');
+            if (debugInfo) {
+                const statusLine = debugInfo.querySelector('#pollStatus') || document.createElement('div');
+                statusLine.id = 'pollStatus';
+                statusLine.innerHTML = `Last check: ${timestamp} - Photo: ${uploadedPhoto ? '✅ FOUND' : '❌ NOT FOUND'}`;
+                if (!debugInfo.querySelector('#pollStatus')) {
+                    debugInfo.appendChild(statusLine);
+                }
+            }
             
             if (uploadedPhoto && !document.getElementById('photoPreview').src) {
                 console.log('Displaying uploaded photo');
                 displayUploadedPhoto(uploadedPhoto);
+                
+                // Stop polling once we find the photo
+                if (window.pollInterval) {
+                    clearInterval(window.pollInterval);
+                }
             }
         }
 
-        function displayUploadedPhoto(photoDataUrl) {
+        function displayUploadedPhoto(photoData) {
             const uploadSection = document.getElementById('uploadSection');
             const status = document.getElementById('uploadStatus');
             const preview = document.getElementById('photoPreview');
             const submitBtn = document.getElementById('submitBtn');
             
+            // Handle both old format (direct base64) and new format (JSON)
+            let imageData;
+            let timestamp = '';
+            
+            try {
+                const parsed = JSON.parse(photoData);
+                imageData = parsed.image;
+                timestamp = new Date(parsed.timestamp).toLocaleString();
+            } catch (e) {
+                // Old format - direct base64 string
+                imageData = photoData;
+            }
+            
             uploadSection.classList.add('has-photo');
             status.className = 'status success';
-            status.textContent = '✅ Photo uploaded successfully!';
+            status.style.display = 'block';
+            status.textContent = `✅ Photo uploaded successfully!${timestamp ? ' at ' + timestamp : ''}`;
             
-            preview.src = photoDataUrl;
+            preview.src = imageData;
             preview.style.display = 'block';
             
             submitBtn.disabled = false;
+            
+            console.log('Photo displayed successfully');
         }
 
         // Camera functionality
@@ -515,19 +561,36 @@
             if (capturedPhoto && window.currentSessionId) {
                 console.log('Uploading photo for session:', window.currentSessionId);
                 
-                // Store the photo (in real implementation, send to server)
-                localStorage.setItem('uploaded_photo_' + window.currentSessionId, capturedPhoto);
+                // Store the photo with timestamp for debugging
+                const photoData = {
+                    image: capturedPhoto,
+                    timestamp: new Date().toISOString(),
+                    sessionId: window.currentSessionId
+                };
+                
+                localStorage.setItem('uploaded_photo_' + window.currentSessionId, JSON.stringify(photoData));
                 
                 // Verify it was stored
                 const stored = localStorage.getItem('uploaded_photo_' + window.currentSessionId);
                 console.log('Photo stored successfully:', stored ? 'YES' : 'NO');
                 console.log('Storage key used:', 'uploaded_photo_' + window.currentSessionId);
                 
-                // Also store a simple flag for debugging
+                // Store additional debugging info
                 localStorage.setItem('last_upload_session', window.currentSessionId);
                 localStorage.setItem('last_upload_time', new Date().toISOString());
+                localStorage.setItem('upload_count', (parseInt(localStorage.getItem('upload_count') || '0') + 1).toString());
                 
-                alert('Photo uploaded successfully! You can now close this window and return to the form.');
+                // Try to trigger a custom event as a fallback
+                try {
+                    const event = new CustomEvent('photoUploaded', {
+                        detail: { sessionId: window.currentSessionId }
+                    });
+                    window.dispatchEvent(event);
+                } catch (e) {
+                    console.log('Custom event not supported');
+                }
+                
+                alert('Photo uploaded successfully! Return to the form and click "Check Storage Now" if it doesn\'t appear automatically.');
                 
                 // Stop camera stream
                 if (stream) {
