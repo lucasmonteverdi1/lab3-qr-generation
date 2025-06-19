@@ -1,1 +1,1 @@
-# lab3-qr-generation - ophth
+# lab3-qr-generation
